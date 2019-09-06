@@ -1,128 +1,111 @@
-# autoformation à openfoodfacts
-# pour importer la lib openfoodfact : pip install git+https://github.com/openfoodfacts/openfoodfacts-python
+"""Welome to the fifth project
+
+    In this projet, I permit to my user to change their mind on food.
+    I want to make them discover that for each product they have the same product
+    with a label "bio". Respecting environnement is possible.
 """
-    Maintenant je dois placer ces données dans la base :
-        -1 tester le remplissage de la table avec un set de valeurs
-
-"""
-
-import openfoodfacts
-import database as db
-
-class Product():
-
-    TUP_CATEGORIES = openfoodfacts.facets.get_categories()
-    SIZE_RESEARCH = 50
-    TUP_CATEGORIES = ("Jus de fruits", "Céréales", "Confiture", "Barre chocolatee",\
-    "Lait", "Chips", "Bretzels", "Yaourts", "Boissons Alcoolisées", "Gâteaux", "Pains de mie", "Charcuterie",\
-    "Pizzas", "Tartes salées", "Spaghetti", "Riz", "Glaces", "Chocolat noir", "Soupes") #5+7+8
-    TUP_CRIT = ("product_name_fr", "labels", "additives_original_tags", "packaging_tags", "nutrition_grades",\
-    "nova_group", "traces","manufacturing_places_tags","minerals_tags",\
-    "ingredients_from_or_that_may_be_from_palm_oil_n"\
-    ,"link", "product_quantity", "brands_tags", "nutriments")
-
-    def __init__(self):
-        self.dict_prod = self.get_categories(self.TUP_CATEGORIES)
+import os
+import sys
+import find_sub as fd
+import modules.user as us
+import modules.database as db
 
 
-    def _selected_crit_for_prod(self, product):
-        """Takes a product and keep only crit concerning itself based on a tuple of criterions"""
-
-        final_product = {}
-        for crit in self.TUP_CRIT:
-            try :
-                final_product[crit] = product[crit]
-            except Exception as e:
-                final_product[crit] = None
-        return final_product
-
-
-    def fill_table(self, name, labels, additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, link, quantity, brands, nutriments):
-        """Fills the table of a given db from DbConnector
-            -1 connection
-            -2 request
-        """
-        try:
-            db_conn = db.DbConnector()
-
-            db_conn.add_substitute(name, labels, additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, link, quantity, brands, nutriments)
-        except Exception as e:
-            raise e
-        pass
-
-    def get_categories(self, list_selected):
-        """Checks wether each element of the list contains at least 20 elements,
-        then returns a liste of categories with 20 prod inside """
-
-        dict_prod = {} #create dico
-
-        print("Interroge l'API ! ")
-        try :
-            for category in list_selected:
-                # je fais ma recherche
-                results = openfoodfacts.products.advanced_search({
-                    "search_terms":"",
-                    "tagtype_0":"categories ",
-                    "tag_contains_0":"contains",
-                    "tag_0": category,
-                    "tagtype_1":"countries  ",
-                    "tag_contains_1":"contains",
-                    "tag_1":"France",
-                    "page_size": self.SIZE_RESEARCH})
-
-                liste_prod = results["products"] #keeps only the products
-
-                liste_nom_prod = []
-                liste_final_prod = []
-
-                for prod in liste_prod: #selects prod from list of products
-                    nom_prod = prod["product_name_fr"]
-                    if nom_prod not in liste_nom_prod and len(liste_nom_prod) < 20: #anti-duplicate
-                        liste_nom_prod.append(nom_prod)
-                        liste_final_prod.append(self._selected_crit_for_prod(prod))
-                dict_prod[category] = liste_final_prod
-            return dict_prod
-        except Exception as e :
-            raise e
-
-
-
-    def get_products(self, categories):
-        pass
-
-
+#################################################################### main
 def main():
-    prod = Product()
-    ajout = 0
-    for category in prod.dict_prod:
-        for product in prod.dict_prod[category]:
-            name = product["product_name_fr"]
-            labels = product["labels"]
-            additives = product["additives_original_tags"]
-            packagings = product["packaging_tags"]
-            nutrition_grade = product["nutrition_grades"]
-            nova_group = product["nova_group"]
-            traces = product["traces"]
-            manufacturing_places_tags = product["manufacturing_places_tags"]
-            minerals_tags = product["minerals_tags"]
-            palm_oil = product["ingredients_from_or_that_may_be_from_palm_oil_n"]
-            link = product["link"]
-            quantity = product["product_quantity"]
-            brands = product["brands_tags"]
-            nutriments = product["nutriments"]
+    """ execute all the actions """
+    os.system("cls")
+    # input("\n\tBienvenu dans l'application Pur Beurre. Cette application a pour fonction"\
+    # " de vous montrer que parmi des produits du quotidien vous pouvez trouver un "\
+    # "substitut dont la fabrication est respectueuse de l'environnement.\n")
 
-            try:
+    my_user = us.User()
+    loop = True
+    while loop:
+        os.system("cls")
+        print("\n", "-"*30, " PAGE D'ACCUEIL ", "-"*30, "\n")
+        if my_user.connected:
+            print("Vous êtes connecté(e) en tant que : {}.".format(my_user.pseudo))
+            answer = input("\nQue voulez-vous faire ?\n"\
+                "  1 - Me déconnecter\n"\
+                "  2 - Trouver un substitut, \n"\
+                "  3 - Consulter votre base de données,\n"\
+                "  4 - Quitter.\n ->")
+        else:
+            print("Vous n'êtes pas connecté(e).")
+            my_user.pseudo = ""
+            my_user.password = ""
 
-                prod.fill_table(name, labels, additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, link, quantity, brands, nutriments)
-                ajout += 1
-            except Exception as e:
-                ajout -= 1
-                print("- - "*50)
-                print(name, len(traces), traces)
-                print("- - "*50)
-                raise e
+            answer = input("\nQue voulez-vous faire ? "\
+                " (Par exemple : Taper '1' et entrer pour vous connecter) \n"\
+                "  1 - Me connecter, \n"\
+                "  2 - Trouver un substitut, \n"\
+                "  3 - Consulter votre base de données,\n"\
+                "  4 - Quitter.\n ->")
+##################################################################################### 1
+        if answer == "1":
+            #depend on my_user.connected
+            if my_user.connected:
+                my_user.connected = False
+                my_user.pseudo = ""
+                my_user.password = ""
+            else:
+                my_db = db.DbConnector()
+                my_user = my_db.authentication(my_user)
 
-    print("ligne écrites = {}".format(ajout))
+##################################################################################### 2
+        elif answer == "2":
+            # my_user.connected = True
+            # my_user.pseudo = "anna"
+            # my_user.password = "123"
+            # my_user.id = "2"
+            #find_substitute has to find a substitute from a given product
+            my_substitute, my_search, save_data = fd.main()
+            #it returns an object substitute, search and save_data (True or False)
+
+            if save_data:
+                my_db = db.DbConnector()
+                my_user = my_db.authentication(my_user)
+                my_db.add_data_in_db(my_substitute, my_search, my_user)
+
+##################################################################################### 3
+
+        elif answer == "3":
+            my_db = db.DbConnector()
+
+            my_user = my_db.authentication(my_user)
+            #consult_database permit to the user to access the database
+            os.system("cls")
+            print("\n", "-"*30, " BASE DE DONNEES ", "-"*30, "\n")
+            loop2 = True #loop already exists
+            while loop2:
+                action = input("\nQue voulez-vous faire ?\n"\
+                    "  1 - Consulter l'historique de recherche,\n"\
+                    "  2 - Afficher la fiche info d'un substitut choisi,\n"\
+                    "  3 - Quitter.\n ->")
+                if action == "1":
+                    my_db.history(my_user)
+                    loop2 = False
+                elif action == "2":
+                    my_db.get_more_info(my_user)
+                    loop2 = False
+                elif action == "3":
+                    loop2 = False
+                else:
+                    input("Je n'ai pas compris.")
+
+
+##################################################################################### 4
+        elif answer == "4":
+            print("A bientôt !")
+            sys.exit(2)
+        else:
+            print("Je n'ai pas compris.")
 
 if __name__ == '__main__':
     main()
+
+# my_user.pseudo = "adi"
+# my_user.password = "123"
+# my_user.connected = True
+# my_user.id = "1"

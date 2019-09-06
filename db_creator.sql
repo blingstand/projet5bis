@@ -37,7 +37,8 @@ CREATE TABLE Search (
 DROP TABLE IF EXISTS Product;
 CREATE TABLE Product (
     id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    name VARCHAR(150) NOT NULL, -- product_name_fr
+    category VARCHAR(60) NOT NULL,
+    name VARCHAR(150) NOT NULL,
     labels VARCHAR(300),
     additives VARCHAR(150) ,
     packagings VARCHAR(300) ,
