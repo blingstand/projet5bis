@@ -38,11 +38,28 @@ class Choice():
         print("\n", msg, "\n")
         time.sleep(1)
 
+
     def _display_title(self,msg):
 
         os.system("cls")
         print("\n", "-"*30, " PAGE DE RECHERCHE ", "-"*30)
         print(".... Choisir {} ....\n".format(msg))
+
+
+    def _get_prod_from_cat(self, cat):
+        """ returns 20 prod from db found with a given category and gather them in list """
+
+        sql = 'select name from product where category = "{}";'.format(cat)
+        self.my_cursor.execute(sql)
+        my_result = self.my_cursor.fetchall()
+
+        list_prod = []
+
+        for i in my_result:
+            list_prod.append(i)
+
+        return list_prod
+
 
     def display_choice_cat(self):
         """ permits user to make a choice among 20 categories"""
@@ -61,38 +78,50 @@ class Choice():
             print("21 : Revenir au menu principal")
             ind_category = input(">")
 
-            if ind_category == "21":
-                input("Retour au menu principal ! ")
-                return None, None, False
-            elif int(ind_category) > 21:
-                continue
-            else:
-                print("Vous avez choisi : {}".format(self.TUP_CATEGORY[int(ind_category)]))
-                return self.TUP_CATEGORY[int(ind_category)]
+            try:
+                if ind_category == "21":
+                    input("Retour au menu principal ! ")
+                    return None, None, False
+                elif int(ind_category) < 21:
+                    print("Vous avez choisi : {}".format(self.TUP_CATEGORY[int(ind_category)-1]))
+                    return self.TUP_CATEGORY[int(ind_category)-1]
+                else:
+                    print("Un nombre entre 1 et 21 est attendu ! ")
+            except:
+                print("Un nombre entre 1 et 21 est attendu ! ")
 
-    def _get_prod_from_cat(self, cat):
-        """ returns 20 prod from db found with a given category and gather them in list """
-
-        sql = 'select name from product where category = "{}";'.format(cat)
-        self.my_cursor.execute(sql)
-        my_result = self.my_cursor.fetchall()
-
-        list_prod = []
-
-        for i in my_result:
-            list_prod.append(i)
-
-        input("{},{}".format(len(list_prod), list_prod))
-        return list_prod
 
     def display_choice_prod(self, cat):
         """ permits user to make a choice among 20 categories"""
 
         self._display_title("un produit")
 
-        print("test recup data from db")
+        list_prod = self._get_prod_from_cat(cat)
 
-        dico = self._get_prod_from_cat(cat)
+        not_acceptable_answer = True
+        while not_acceptable_answer:
+        #loop in order to repeat the input question until an acceptable answer
+            print("Ecrivez un nombre pour choisir votre produit :")
+            count = 1
+            for i in list_prod:
+                print("\t{} -> {}".format(count, i))
+                count +=1
+            print("21 : Revenir au menu principal")
+            ind_prod = input(">")
+
+            try :
+                ind_prod = int(ind_prod)
+                if ind_prod == "21":
+                    input("Retour au menu principal ! ")
+                    return None, None, False
+                elif ind_prod < 21:
+                    print("Vous avez choisi : {}".format(list_prod[int(ind_prod)-1]))
+                    return list_prod[int(ind_prod)-1]
+                else:
+                    print("Un nombre entre 1 et 21 est attendu ! ")
+            except:
+                print("Un nombre entre 1 et 21 est attendu ! ")
+
 
         # not_acceptable_answer = True
         # while not_acceptable_answer:
@@ -117,8 +146,8 @@ class Choice():
 def main():
 
     choice = Choice()
-    cat = choice.cat
-    choice.display_choice_prod(cat)
+    selected_cat = choice.cat
+    selected_prod = choice.display_choice_prod(selected_cat)
 
 
 main()

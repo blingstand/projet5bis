@@ -60,7 +60,9 @@ def main():
             # my_user.password = "123"
             # my_user.id = "2"
             #find_substitute has to find a substitute from a given product
-            my_substitute, my_search, save_data = fd.main()
+            choice = Choice()
+            selected_cat = choice.cat
+            selected_prod = choice.display_choice_prod(selected_cat)
             #it returns an object substitute, search and save_data (True or False)
 
             if save_data:
