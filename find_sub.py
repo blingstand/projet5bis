@@ -51,11 +51,10 @@ class Interaction():
             self.display_title("Choisir une catégorie")
             ind = self.input_cat_prod("catégorie", self.TUP_CATEGORY) #input for cat
             answer = self._check_answer(ind, self.TUP_CATEGORY,"Un nombre entre 1 et 21 est attendu ! ")
-            input("continue ? ")
         return answer
 
     def _check_answer(self, ind, my_list, error_msg):
-        print("ind == 21", ind == "21")
+        """ For each input check the answer"""
         try:
 
             if ind == "21":
@@ -70,9 +69,13 @@ class Interaction():
             self.negatif_feed_back("except")
             return None
 
-
-
-
+    def conclusion_choice(self, cat, prod):
+        """ Displays the choice done"""
+        os.system("cls")
+        print("* * "*20)
+        print("\nVous avez choisi : {} > {}\n".format(cat, prod))
+        print("* * "*20)
+        input("\n")
 class Database(Interaction):
 
 
@@ -108,22 +111,14 @@ class Database(Interaction):
         """ permits user to make a choice among 20 categories"""
 
         list_prod = self._get_prod_from_cat(cat)
-        while True:
+        answer = None
+        while answer == None:
         #loop in order to repeat the input question until an acceptable answer
             self.display_title("Choisir un produit")
             ind = self.input_cat_prod("produit", list_prod) #input for cat
-            try :
-                ind = int(ind)
-                if ind == 21:
-                    input("Retour au menu principal ! ")
-                    return None, None, False
-                elif ind < 21:
-                    self.display_title("Choisir un produit")
-                    return list_prod[int(ind)-1]
-                else:
-                    self.negatif_feed_back("Un nombre entre 1 et 21 est attendu ! ")
-            except:
-                self.negatif_feed_back("Un nombre entre 1 et 21 est attendu ! ")
+            answer = self._check_answer(ind, list_prod,"Un nombre entre 1 et 21 est attendu ! ")
+
+        return answer
 
     # *******************************************
     def _get_infos(self, cat, prod, criterion):
@@ -444,10 +439,7 @@ def main():
     choice = Database()
     selected_cat = choice.display_choice_cat()
     name_selected_prod = choice.display_choice_prod(selected_cat)
-    print("* * "*20)
-    print("\nVous avez choisi : {} > {}\n".format(selected_cat, name_selected_prod))
-    print("* * "*20)
-    input("\n")
+    choice.conclusion_choice(selected_cat, name_selected_prod)
     choice.compare_prod_with_sub(selected_cat, name_selected_prod)
 
     #******************************************* THE LOOP
