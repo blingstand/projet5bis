@@ -17,13 +17,13 @@ class Fill_DB():
     "Glaces", "Chocolat noir", "Soupes", "Compotes" )
     TUP_COL = ("product_name", "labels", "additives_original_tags", "packaging",\
         "nutrition_grades","nova_group", "traces","manufacturing_places","minerals_tags",\
-        "ingredients_from_or_that_may_be_from_palm_oil_n","link", "product_quantity", \
+        "ingredients_from_or_that_may_be_from_palm_oil_n","url", "product_quantity", \
         "brands_tags", "nutriments")
     TUP_IMP_COL = ("product_name", "additives_original_tags", "nutrition_grades","labels", \
         "packaging", "manufacturing_places", "ingredients_from_or_that_may_be_from_palm_oil_n",\
         "nova_group")
     COLUMNS = 'category, name, labels, additives, nb_additives, packagings, nutrition_grade, '\
-    'nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, link,'\
+    'nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url,'\
     ' quantity, brands, nutriments'
 
     def __init__(self):
@@ -168,14 +168,14 @@ class Fill_DB():
 
         return dict_prod
 
-    def add_substitute(self, category, name, labels, additives,nb_additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, link, quantity, brands, nutriments):
+    def add_substitute(self, category, name, labels, additives,nb_additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, brands, nutriments):
         """
         Inserts a line in the table product
         """
         sql = 'INSERT INTO Product ({}) VALUES ("{}", "{}", "{}", "{}", "{}", "{}", '\
         '"{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}");'.format(self.COLUMNS,\
         category, name, labels, additives, nb_additives, packagings, nutrition_grade, nova_group, \
-        traces, manufacturing_places_tags, minerals_tags, palm_oil, link, quantity, \
+        traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, \
         brands, nutriments)
         self.my_cursor.execute(sql)
         self.mydb.commit() #has to commit the change
@@ -190,7 +190,6 @@ def main():
             name = product["product_name"]
             labels = product["labels"]
             additives = product["additives_original_tags"]
-            print("len de additives_original_tags : ", len(product["additives_original_tags"]))
             nb_additives = len(product["additives_original_tags"])
             packagings = product["packaging"]
             nutrition_grade = product["nutrition_grades"]
@@ -199,13 +198,14 @@ def main():
             manufacturing_places_tags = product["manufacturing_places"]
             minerals_tags = product["minerals_tags"]
             palm_oil = product["ingredients_from_or_that_may_be_from_palm_oil_n"]
-            link = product["link"]
+            #page in french
+            url = product["url"].replace("https://world.", "https://fr.", 1)
             quantity = product["product_quantity"]
             brands = product["brands_tags"]
             nutriments = product["nutriments"]
 
             try :
-                products.add_substitute(category, name, labels, additives, nb_additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, link, quantity, brands, nutriments)
+                products.add_substitute(category, name, labels, additives, nb_additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, brands, nutriments)
                 ajout += 1
             except Exception as e :
                 print(name, e)
@@ -215,13 +215,13 @@ def main():
 if __name__ == '__main__':
     main()
 
- # def fill_table(self, category, name, labels, additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, link, quantity, brands, nutriments):
+ # def fill_table(self, category, name, labels, additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, brands, nutriments):
     #     """Fills the table of a given db from DbConnector
     #         -1 connection
     #         -2 request
     #     """
     #     try:
-    #         self.add_substitute(category, name, labels, additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, link, quantity, brands, nutriments)
+    #         self.add_substitute(category, name, labels, additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, brands, nutriments)
     #     except Exception as e:
     #         raise e
 

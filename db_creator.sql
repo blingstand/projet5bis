@@ -34,6 +34,7 @@ CREATE TABLE Search (
     PRIMARY KEY (user_id, substitute_id)
 )ENGINE = INNODB;
 
+use Python
 DROP TABLE IF EXISTS Product;
 CREATE TABLE Product (
     id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -50,7 +51,7 @@ CREATE TABLE Product (
     minerals_tags VARCHAR(50),
     palm_oil VARCHAR(5),
     composition VARCHAR(1800),
-    link VARCHAR(200),
+    url VARCHAR(200),
     quantity VARCHAR(10),
     brands VARCHAR(80),
     nutriments VARCHAR(3500),

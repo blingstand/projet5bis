@@ -5,95 +5,31 @@
     First the user selects a category. Then a product belonging to this category.
     Finally the system finds out an organic substitute of this product.
 """
-import os, sys
+import os, sys, webbrowser
 import time
-import modules.search as search
+from modules.interactions import Interactions
+from config import Config
 import mysql.connector
 
-
-# ******************************************* variables
-class Interaction():
-
-    TUP_CATEGORY = ("Jus de fruits", "Céréales", "Confiture", "Barre chocolatee",\
-    "Lait", "Chips", "Bretzels", "Yaourts", "Poissons", "Gâteaux", \
-    "Pains de mie", "Charcuterie","Pizzas", "Tartes salées", "Spaghetti", "Riz",\
-    "Glaces", "Chocolat noir", "Soupes", "Compotes" )
-
-
-    def negatif_feed_back(self,msg):
-        """ displays a negatif feed back then 1 sec break """
-        print("\n", msg, "\n")
-        time.sleep(1)
-
-    def display_title(self,msg):
-        """ displays a title a the top of the page """
-        os.system("cls")
-        print("\n", "-"*30, " PAGE DE RECHERCHE ", "-"*30)
-        print(".... {} \n".format(msg))
-
-    def input_cat_prod(self, wanted, my_liste):
-        """ Lets the user choose a cat """
-        print("Ecrivez un nombre pour choisir votre {} :".format(wanted))
-        count = 1
-        for i in my_liste:
-            print("\t{} -> {}".format(count, i))
-            count +=1
-        print("21 : Revenir au menu principal")
-        ind = input(">")
-
-        return ind
-
-    def display_choice_cat(self):
-        """ permits user to make a choice among 20 categories"""
-        answer = None
-        while answer == None:
-        #loop in order to repeat the input question until an acceptable answer
-            self.display_title("Choisir une catégorie")
-            ind = self.input_cat_prod("catégorie", self.TUP_CATEGORY) #input for cat
-            answer = self._check_answer(ind, self.TUP_CATEGORY,"Un nombre entre 1 et 21 est attendu ! ")
-        return answer
-
-    def _check_answer(self, ind, my_list, error_msg):
-        """ For each input check the answer"""
-        try:
-
-            if ind == "21":
-                input("Retour au menu principal ! ")
-                sys.exit()
-            elif int(ind) < 21:
-                return my_list[int(ind)-1]
-            else:
-                self.negatif_feed_back(error_msg)
-                return None
-        except Exception as e:
-            self.negatif_feed_back("except")
-            return None
-
-    def conclusion_choice(self, cat, prod):
-        """ Displays the choice done"""
-        os.system("cls")
-        print("* * "*20)
-        print("\nVous avez choisi : {} > {}\n".format(cat, prod))
-        print("* * "*20)
-        input("\n")
-class Database(Interaction):
-
-
-    LIST_BIO_LABELS = ["Bio","Bio européen","FR-BIO-01","AB Agriculture Biologique", "Eco-Emballages","Organic", "EU Organic"]
+class Database(Interactions):
+    """ This class use mysql to get informations """
+    TUP_MIF = ("france", "France")
+    TUP_BIO_LABELS = ("Bio","Bio européen","FR-BIO-01","AB Agriculture Biologique", \
+        "Eco-Emballages","Organic", "EU Organic")
 
     def __init__(self):
+        config = Config()
         self.mydb = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            passwd="123",
-            database="python"
+            host=config.host,
+            user=config.user,
+            passwd=config.passwd,
+            database=config.database
         )
         self.my_cursor = self.mydb.cursor()
 
-
-
+    # ******************************************* SELECT PROD
     def _get_prod_from_cat(self, cat):
-        """ returns 20 prod from db found with a given category and gather them in list """
+        """ returns prod from db found with a given category and gathers them in list """
 
         sql = 'select name from product where category = "{}";'.format(cat)
         self.my_cursor.execute(sql)
@@ -120,93 +56,28 @@ class Database(Interaction):
 
         return answer
 
-    # *******************************************
-    def _get_infos(self, cat, prod, criterion):
-        """ Returns informations from db based on parameters """
-
-        dico = {} #not precise but short name for lines 182-189
-        if criterion == "1":
-            sql = 'select name, additives, nutrition_grade from product where category = "{}" and'\
-            ' name = "{}";'.format(cat, prod)
-            self.my_cursor.execute(sql)
-            my_results = self.my_cursor.fetchall()
-            for mr in my_results:
-                dico["name"],dico["additives"],dico["nutrition_grade"] = mr[0], mr[1], mr[2]
-        else :
-            sql = 'select name, labels, manufacturing_places_tags, palm_oil, nova_group '\
-            'from product where category = "{}" and name = "{}";'.format(cat, prod)
-            self.my_cursor.execute(sql)
-            my_results = self.my_cursor.fetchall()
-            for mr in my_results:
-                dico["name"],dico["labels"], dico["manufacturing_places_tags"], \
-                dico["palm_oil"], dico["nova_group"] = mr[0], mr[1], mr[2], mr[3],mr[4]
-        return dico
-
-    def _display_prod_info(self, info_products):
-        """ Creates a tab to display infos about product """
-
-        self.display_title("Afficher le produit")
-        chain = ""
-        for key in info_products:
-            chain += "------"*15
-            chain += "\n{} : {}\n".format(key, info_products[key])
-        chain += "------"*15
-        return chain
 
     # *******************************************GET INFOS ABOUT SEL_PROD
 
-    def _get_NS_selected_prod(self,name_selected_prod):
-        """ Returns the NS of the choosen prod """
-        sql = 'select nutrition_grade from product where name = "{}";'\
-            .format(name_selected_prod)
+    def _get_info_selected_prod(self, name_selected_prod, info): #nutritiongrade, nb_additives, palm_oil
+        """Returns the asked info of a given prod """
+        sql = 'select {} from product where name = "{}";'\
+            .format(info, name_selected_prod)
         self.my_cursor.execute(sql)
-        my_result = self.my_cursor.fetchone()
-        NS = my_result[0]
-        return NS
-    def _get_NA_selected_prod(self, name_selected_prod):
-        """ Returns the len(add) of the choosen prod """
-        sql = 'select nb_additives from product where name = "{}";'\
-            .format(name_selected_prod)
-        self.my_cursor.execute(sql)
-        my_result = self.my_cursor.fetchone()
-        nb_add = my_result[0]
-        return nb_add
-    def _get_PO_selected_prod(self, name_selected_prod):
-        """ Returns True or False based on the presence of palm oil in the choosen prod """
-        sql = 'select palm_oil from product where name = "{}";'\
-            .format(name_selected_prod)
-        self.my_cursor.execute(sql)
-        my_result = self.my_cursor.fetchone()
-        if my_result[0] == "0":
-            return False
-        else:
-            return True
-    def _get_MIF_selected_prod(self, name_selected_prod):
-        """ Returns True or False based on the presence of palm oil in the choosen prod """
-        sql = 'select manufacturing_places_tags from product where name = "{}";'\
-            .format(name_selected_prod)
-        self.my_cursor.execute(sql)
-        my_result, substitute = self.my_cursor.fetchone(), None
+        tuple_my_results = self.my_cursor.fetchone() #-> tuple
+        my_results = tuple_my_results[0]
+        return my_results
+
+    def _after_split_is_in_list(self, name_selected_prod, my_result, my_list):
+        """ Returns True or False based on the presence of an element in the given list """
+        substitute = None
         try :
-            list_origin = my_result[0].split(",")
-            for origin in list_origin:
-                if origin in ["france","France"]:
+            list_result= my_result.split(",")
+            for element in list_result:
+
+                if element in my_list:
                     substitute = name_selected_prod
-                    return True
-            return False
-        except:
-            return False
-    def _get_bio_selected_prod(self, name_selected_prod):
-        """ Return True if product has a bio label. """
-        sql = 'select labels from product where name = "{}";'\
-            .format(name_selected_prod)
-        self.my_cursor.execute(sql)
-        my_result, substitute = self.my_cursor.fetchone(), None
-        try :
-            list_label = my_result[0].split(",")
-            for label in list_label:
-                if label in self.LIST_BIO_LABELS:
-                    return True
+                    return substitute
             return False
         except:
             return False
@@ -226,12 +97,12 @@ class Database(Interaction):
         self.my_cursor.execute(sql)
         my_results = self.my_cursor.fetchall()
 
-        NS_selected_prod = self._get_NS_selected_prod(name_selected_prod)
+        NS_selected_prod = self._get_info_selected_prod(name_selected_prod, "nutrition_grade")
 
         lower_NS = NS_selected_prod
         list_low_NS = [] #stock all the prod with a lower_NS NS
 
-        for prod in my_results:             #1 -------------
+        for prod in my_results:            #1 -------------
             if prod[1]<lower_NS:
                 lower_NS = prod[1]
         # input("NS_selected_prod = {}".format(NS_selected_prod))    #2 -------------
@@ -265,8 +136,10 @@ class Database(Interaction):
     def _test_if_healthier(self, name_selected_prod,lower_NS,lower_NA):
         """ Tests if my prod is healthier than sub and returns True or False"""
         count = 0
-        NS = self._get_NS_selected_prod(name_selected_prod)
-        NA = self._get_NA_selected_prod(name_selected_prod)
+        NS = self._get_info_selected_prod(name_selected_prod, "nutrition_grade")
+        NA = self._get_info_selected_prod(name_selected_prod, "nb_additives")
+
+
         if NS <= lower_NS and NA <= lower_NA:
             return True,name_selected_prod, NS, NA
         else:
@@ -285,93 +158,54 @@ class Database(Interaction):
             return False, substitute, lower_NS, lower_NA
 
     # *******************************************RESPONSIBLE FOOD
-    def _get_sub_palm_oil_free(self, cat,name_selected_prod):
-        """Return a palm_oil_free sub"""
 
-        PO_in_selected_prod = self._get_PO_selected_prod(name_selected_prod)
-        if PO_in_selected_prod == False:
-            return "Gardez", name_selected_prod, "il est sans huile de palme."
+    def _get_resp_sub(self, cat, name_selected_prod, info_for_sql, my_list):
+        """Return a responsible sub according with info_for_sql"""
+
+        is_str_in_list = self._get_info_selected_prod(name_selected_prod, info_for_sql)
+        result_after_split = self._after_split_is_in_list(name_selected_prod, is_str_in_list, my_list)
+
+        if result_after_split:
+            return name_selected_prod
         else:
-            sql = 'select name, palm_oil from product where category = "{}";'\
-                .format(cat)
-            self.my_cursor.execute(sql)
-            my_results, substitute = self.my_cursor.fetchall(), None
-
-            for prod in my_results:
-                if prod[1] == "0": #prod[1] = palm_oil
-                    substitute = prod[0] #prod[0] = name
-
-            if substitute:
-                return "Prenez",substitute, "il est sans huile de palme."
-            else:
-               return None
-
-    def _get_sub_made_in_FR(self, cat, name_selected_prod):
-        """Return a Made In France (MIF) product"""
-        prod_MIF = self._get_MIF_selected_prod(name_selected_prod)
-        if prod_MIF:
-            return "Gardez", name_selected_prod, "il est fabriqué en France."
-        else:
-            sql = 'select name, manufacturing_places_tags from product where category = "{}";'\
-                .format(cat)
+            sql = 'select name, {} from product where category = "{}";'\
+                .format(info_for_sql, cat)
             self.my_cursor.execute(sql)
             my_results = self.my_cursor.fetchall()
-            substitute = None
             for prod in my_results:
-                list_origin = prod[1].split(",")
-                for origin in list_origin:
-                    if origin in ["france","France"]:
-                        substitute = prod[0]
-                        return "Prenez", substitute, "il est produit en France."
-                    else:
-                       return None
+                if info_for_sql == "palm_oil":
+                    if prod[1] == "0": # palm_oil == None
+                        substitute = prod[0] #prod[0] = name
+                        return substitute
+                    return None
+                else:
+                    substitute = self._after_split_is_in_list(prod[0], prod[1], my_list)
+                    if substitute:
+                        return substitute
+        return None
 
-    def _get_sub_bio_labels(self, cat, name_selected_prod):
-        """ Returns perhaps a sub with a bio label
-        1/ for each product in the list
-        2/ checks wether at least 1 label belongs to the list_bio_labels
-        3/ if conditions are validated, appends it to list
-
-        """
-        prod_BIO = self._get_bio_selected_prod(name_selected_prod)
-        if prod_BIO:
-            return "Gardez", name_selected_prod, "il est fabriqué en France."
-        else:
-            sql = 'select name, labels from product where category = "{}";'\
-                .format(cat)
-            self.my_cursor.execute(sql)
-            my_results = self.my_cursor.fetchall()
-            for prod in my_results : #1
-                list_labels = prod[1].split(",") #prod[1]=label
-
-                for label in list_labels :
-                    if label in self.LIST_BIO_LABELS:
-                        substitute = prod[0] #prod[0]=name
-                        return "Prenez", substitute, "il est bio ! "
-            return None
-
-    def _find_responsible_sub(self,cat,name_selected_prod):
+    def _get_type_resp_sub(self,cat,name_selected_prod):
+        """ Returns a substitute that respond to the precised exigence + the precision var """
         title = "Recherche d'un substitut à ce produit {}".format(name_selected_prod)
         self.display_title(title)
-        precision = ""
-        while precision not in ["1","2","3","4"]:
-            precision = input("Pour cette catégorie, je vous propose 3 nouveaux critères:\n"\
-        "1/ Sans Huile de Palme,\n2/ Produit en France,\n3/ Produit Bio,"\
-        "\n4/ Revenir au menu principal.\n>")
-            if precision == "1":
-                substitute = self._get_sub_palm_oil_free(cat,name_selected_prod)
-            elif precision == "2":
-                substitute = self._get_sub_made_in_FR(cat, name_selected_prod)
-            elif precision == "3":
-                substitute = self._get_sub_bio_labels(cat, name_selected_prod)
-            elif precision == "4":
-                print("Retour au menu principal")
-            else:
-                self.negatif_feed_back("Un nombre entre 1 et 4 est attendu")
-        return substitute
+        precision = self.get_precision()
+        if precision == "1":
+            substitute = self._get_resp_sub(cat,name_selected_prod, "palm_oil", [])
+        elif precision == "2":
+            substitute = self._get_resp_sub(cat, name_selected_prod, \
+                "manufacturing_places_tags", self.TUP_MIF)
+        elif precision == "3":
+            substitute = self._get_resp_sub(cat, name_selected_prod, "labels", \
+                self.TUP_BIO_LABELS)
+        elif precision == "4":
+            print("Retour au menu principal")
+        else:
+            self.negatif_feed_back("Un nombre entre 1 et 4 est attendu")
+
+        return substitute, precision
 
     # *******************************************COMPARISON
-    def _display_sub_found(self, cat, name_selected_prod, criterion):
+    def _display_answer(self, cat, name_selected_prod, criterion):
         """ Tries to find a substitute based on criterion
 
             for health : NutriScore(NS) and Additives
@@ -381,7 +215,7 @@ class Database(Interaction):
         #for health
         if criterion == "1": #searches prod from cat
             ok, substitute, lower_NS, lower_NA = self._find_healthy_sub(cat, name_selected_prod)
-            self.display_title("Affichage du substitut")
+            self.display_title("Affichage de la réponse")
             if ok:
                 print("\n","***"*20,"\n\nJe recommande de garder {}.\n>Il a un nutriscore de {} "\
                 "et possède le moins d'additifs ({})\n dans sa catégorie ({}).".\
@@ -392,70 +226,76 @@ class Database(Interaction):
                 format(substitute, lower_NS, lower_NA, cat),"\n\n","***"*20,)
 
         elif criterion == "2":
-            substitute = self._find_responsible_sub(cat,name_selected_prod)
+            substitute, precision = self._get_type_resp_sub(cat,name_selected_prod)
+            precision = int(precision) - 1 #index starts at 0
+            self.display_title("Affichage de la réponse")
 
             if substitute:
-                print("{} ce produit {} car {}".format(substitute[0], substitute[1], substitute[2]))
+                if substitute == name_selected_prod :
+                    print("Vous avez demandé un '{}', je vous conseille de garder {}."\
+                        .format(self.TUP_PRECISION[precision], substitute))
+                else:
+                    print("Vous avez demandé un '{}', je vous conseille plutôt {}."\
+                        .format(self.TUP_PRECISION[precision], substitute))
             else:
                 print("Aucun substitut trouvé pour cette catégorie ({}).\n"\
-                    "Vous pouvez garder {}".format(cat, name_selected_prod))
+                    "Vous pouvez garder {} dans l'attente de nouveau produits dans la base\n".format(cat, name_selected_prod))
 
     def compare_prod_with_sub(self, cat, name_selected_prod):
         """ Searchs informations about prod and compare them with other prod in the table
 
         1/ Lets user to choose a criterion : health / environnement
         2/ Selects a substitute according to the choice if it is possible
-        3/ Displays this sub if found one
 
         """
         #1
         criterion = ""
-        title = "Recherche d'un substitut à ce produit {}".format(name_selected_prod)
+        title = "Recherche d'un substitut à ce produit {} ({})".format(name_selected_prod, cat)
         self.display_title(title)
+
         while criterion not in ["1", "2"]:
             criterion = input("Je vais essayer de vous trouver un substitut à ce produit qui sera soit :\n"\
             "1) Meilleur pour votre santé,\n2) Respectueux de l'environnement.\n Que voulez-vous ?\n> ")
             if criterion not in ["1", "2"]:
                 self.negatif_feed_back("Réponse attendue 1 ou 2.")
         #2
-        self._display_sub_found(cat, name_selected_prod, criterion)
+        self._display_answer(cat, name_selected_prod, criterion)
 
-        #3
 
-    # *******************************************FOR THE LOOP
-    def ask_user(self):
-        """ Ask the user wether he wants to make another search"""
-        loop = True
-        while loop:
-            more_search = input("Voulez-vous faire une autre recherche ?\n"\
-            "> 1/ Oui,\n> 2/ Non.")
-            if more_search == "1" or more_search == "2":
-                return more_search
-            else:
-                self.negatif_feed_back("Réponse attendue 1 ou 2")
+    # *******************************************DISPLAY SHEET PROD
+    def display_more_info_about_product(self, name_selected_prod):
+        """ Displays informations about selected prod comming from the db """
+        sql = 'SELECT url from Product WHERE name = "{}";'.format(name_selected_prod)
+        self.my_cursor.execute(sql)
+        my_result = self.my_cursor.fetchone()
+        return my_result[0]
 
 def main():
 
     choice = Database()
     selected_cat = choice.display_choice_cat()
     name_selected_prod = choice.display_choice_prod(selected_cat)
-    choice.conclusion_choice(selected_cat, name_selected_prod)
     choice.compare_prod_with_sub(selected_cat, name_selected_prod)
 
     #******************************************* THE LOOP
-    more_search = "1"
-    while more_search == "1":
-        more_search = choice.ask_user()
-        if more_search == "1":
+    loop = True
+    while loop:
+
+        after_search = choice.after_search()
+        if after_search == "1":
+            url = choice.display_more_info_about_product(name_selected_prod)
+            webbrowser.open_new(url)
+            choice.display_title("Ensuite ?")
+        elif after_search == "2":
             os.system("cls")
             print("...\nje choisis une autre catégorie : ")
             selected_cat = choice.display_choice_cat()
             name_selected_prod = choice.display_choice_prod(selected_cat)
             choice.compare_prod_with_sub(selected_cat, name_selected_prod)
-
-    os.system("cls")
-    print("Au revoir :)")
-    sys.exit(0)
+        elif after_search == "3":
+            os.system("cls")
+            print("Au revoir :)")
+            sys.exit(0)
 
 
 
