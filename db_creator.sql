@@ -12,29 +12,27 @@ CREATE DATABASE Python;
 
 USE Python;
 
--- Tables
--- -------
--- -------
 
-DROP TABLE IF EXISTS User, Substitute, Brand, Label, Search;
-
+DROP TABLE IF EXISTS User;
 CREATE TABLE User (
     id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    pseudo char(100) NOT NULL,
+    pseudo char(100) NOT NULL UNIQUE,
     password char(30) NOT NULL,
     PRIMARY KEY (id)
 )ENGINE = INNODB;
 
+DROP TABLE IF EXISTS Search;
 CREATE TABLE Search (
     user_id SMALLINT UNSIGNED NOT NULL,
     substitute_id SMALLINT UNSIGNED NOT NULL,
     day_date DATETIME,
     category CHAR(100) NOT NULL,
     product_name CHAR(100) NOT NULL,
-    PRIMARY KEY (user_id, substitute_id)
+    PRIMARY KEY (user_id, substitute_id),
+    FOREIGN KEY (substitute_id) REFERENCES Product(id)
 )ENGINE = INNODB;
 
-use Python
+
 DROP TABLE IF EXISTS Product;
 CREATE TABLE Product (
     id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -57,3 +55,5 @@ CREATE TABLE Product (
     nutriments VARCHAR(3500),
     PRIMARY KEY (id)
 )ENGINE = INNODB;
+
+

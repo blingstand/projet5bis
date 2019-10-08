@@ -6,7 +6,7 @@
     Finally the system finds out an organic substitute of this product.
 """
 import os, sys, webbrowser
-import time
+from datetime import datetime
 from modules.interactions import Interactions
 from config import Config
 import mysql.connector
@@ -84,7 +84,7 @@ class Database(Interactions):
 
     # *******************************************HEALTHY FOOD
 
-    def _find_list_low_NS(self,cat,name_selected_prod):
+    def __find_list_low_NS(self,cat,name_selected_prod):
         """ Returns a list of prod with the lowest letter for NS
             1/ for each prod of my_results checks the NS
             2/ gets lower => the lower letter of the list
@@ -113,7 +113,7 @@ class Database(Interactions):
         # print("\nVoici la liste des prod à garder :\n", list_lowest)
         return list_low_NS, lower_NS       #5 -------------
 
-    def _compare_additives(self,my_list,lower_NS,name_selected_prod):
+    def __compare_additives(self,my_list,lower_NS,name_selected_prod):
         """ Returns the 1st substitute present in list with the lowest number of additives (lower_NA)
             1/ for each prod checks the len(list_additives)
             2/ gets the lower len(list_additives)
@@ -133,7 +133,7 @@ class Database(Interactions):
         # input("> substitute = {}".format(substitute))
         return substitute, lower_NS, lower_NA
 
-    def _test_if_healthier(self, name_selected_prod,lower_NS,lower_NA):
+    def __test_if_healthier(self, name_selected_prod,lower_NS,lower_NA):
         """ Tests if my prod is healthier than sub and returns True or False"""
         count = 0
         NS = self._get_info_selected_prod(name_selected_prod, "nutrition_grade")
@@ -148,14 +148,15 @@ class Database(Interactions):
     def _find_healthy_sub(self,cat,name_selected_prod):
         """ Compares our prod with the others in its cat to perhaps return a better one for health  """
 
-        list_low_NS, lower_NS  = self._find_list_low_NS(cat, name_selected_prod)
-        substitute, lower_NS, lower_NA = self._compare_additives(list_low_NS,lower_NS,name_selected_prod)
-        my_prod_healthier = self._test_if_healthier(name_selected_prod,lower_NS,lower_NA)
+        list_low_NS, lower_NS  = self.__find_list_low_NS(cat, name_selected_prod)
+        substitute, lower_NS, lower_NA = self.__compare_additives(list_low_NS,lower_NS,name_selected_prod)
+        my_prod_healthier = self.__test_if_healthier(name_selected_prod,lower_NS,lower_NA)
 
         if my_prod_healthier[0]:
             return True, my_prod_healthier[1], my_prod_healthier[2], my_prod_healthier[3]
         else:
             return False, substitute, lower_NS, lower_NA
+
 
     # *******************************************RESPONSIBLE FOOD
 
@@ -238,14 +239,56 @@ class Database(Interactions):
                     print("Vous avez demandé un '{}', je vous conseille plutôt {}."\
                         .format(self.TUP_PRECISION[precision], substitute))
             else:
+                substitute = name_selected_prod
                 print("Aucun substitut trouvé pour cette catégorie ({}).\n"\
-                    "Vous pouvez garder {} dans l'attente de nouveau produits dans la base\n".format(cat, name_selected_prod))
+                    "Vous pouvez garder {} dans l'attente de nouveaux produits dans la base\n".format(cat, substitute))
+        return substitute
 
-    def compare_prod_with_sub(self, cat, name_selected_prod):
+    def get_from_db(self, wanted, name):
+
+        sql = 'SELECT {} from product where name = "{}";'.format(wanted, name)
+        self.my_cursor.execute(sql)
+        my_result = self.my_cursor.fetchone()
+
+        input("get_from_db avec {} : {}".format(wanted, my_result))
+        if my_result:
+            return my_result[0]
+        else:
+            return None
+
+    def _save_search(self, cat, name_selected_prod, sub, my_user):
+        substitute_id = self.get_from_db("id", sub)
+        user_id = my_user.id
+        timestamp = datetime.today()
+        sql = 'INSERT INTO search (user_id, substitute_id, day_date, category, product_name)'\
+        'VALUES ({}, {}, "{}", "{}", "{}");'.format(user_id, substitute_id, timestamp, \
+            cat, name_selected_prod)
+        input(sql)
+        self.my_cursor.execute(sql)
+        self.mydb.commit()
+
+    def describ_sub(self, sub):
+        """Gives to the user the description of a product"""
+        components = self.get_from_db("composition", sub)
+        brands = self.get_from_db("brands", sub)
+
+        chain = ""
+        if brands != None:
+            print("brands - ", type(brands))
+            chain += "La marque de ce produit est {}.\n".format(brands)
+        if components != None:
+            chain += "Voici sa composition :"
+            for key in components:
+                chain += "- {} : {},\n".format(key, components[key] )
+        return chain
+
+    def compare_prod_with_sub(self, cat, name_selected_prod, my_user):
         """ Searchs informations about prod and compare them with other prod in the table
 
-        1/ Lets user to choose a criterion : health / environnement
-        2/ Selects a substitute according to the choice if it is possible
+        1/  Lets user to choose a criterion : health / environnement
+        2/  Selects a substitute according to the choice if it is possible
+        3/  Display a description of the product
+        4/  Write the informations concerning the search in the db
 
         """
         #1
@@ -259,8 +302,14 @@ class Database(Interactions):
             if criterion not in ["1", "2"]:
                 self.negatif_feed_back("Réponse attendue 1 ou 2.")
         #2
-        self._display_answer(cat, name_selected_prod, criterion)
 
+        sub = self._display_answer(cat, name_selected_prod, criterion)
+        input("compare_prod_with_sub (sub): {} ".format(sub))
+        #3
+        print(self.describ_sub(sub))
+
+        #
+        self._save_search(cat, name_selected_prod, sub, my_user)
 
     # *******************************************DISPLAY SHEET PROD
     def display_more_info_about_product(self, name_selected_prod):
@@ -269,6 +318,7 @@ class Database(Interactions):
         self.my_cursor.execute(sql)
         my_result = self.my_cursor.fetchone()
         return my_result[0]
+
 
 def main():
 
@@ -296,7 +346,5 @@ def main():
             os.system("cls")
             print("Au revoir :)")
             sys.exit(0)
-
-
-
-main()
+if __name__ == '__main__':
+    main()

@@ -90,14 +90,25 @@ class Interactions():
             else:
                 self.negatif_feed_back("La réponse attendue doit être 1, 2, 3 ou 4 !")
 
-    def after_search(self):
+    def after_search(self, nb):
         """ Ask the user wether he wants to make another search"""
+
         loop = True
-        while loop:
-            more_search = input("Que voulez-vous faire ?"\
-            "\n1/ Afficher plus d'informations,\n2/ Faire une autre recherche,\n3/ Terminer\n>")
-            if more_search in ["1","2","3"]:
-                return more_search
-            else:
-                self.negatif_feed_back("Réponse attendue 1, 2 ou 3 ! ")
+        if nb == "2":
+            while loop:
+                answer = input("Que voulez-vous faire ?"\
+                "\n1/ Faire une autre recherche,\n2/ Terminer\n>")
+                if answer in ["1","2"]:
+                    return answer
+                else:
+                    self.negatif_feed_back("Réponse attendue 1 ou 2 ! ")
+        elif nb == "3":
+            while loop:
+                answer = input("Que voulez-vous faire ?"\
+                "\n1/ Afficher plus d'informations,\n2/ Faire une autre recherche,\n3/ Terminer\n>")
+                if answer in ["1","2","3"]:
+                    return answer
+                else:
+                    self.negatif_feed_back("Réponse attendue 1, 2 ou 3 ! ")
+
 
