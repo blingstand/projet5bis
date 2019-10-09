@@ -249,23 +249,42 @@ class Database(Interactions):
         sql = 'SELECT {} from product where name = "{}";'.format(wanted, name)
         self.my_cursor.execute(sql)
         my_result = self.my_cursor.fetchone()
-
-        input("get_from_db avec {} : {}".format(wanted, my_result))
         if my_result:
             return my_result[0]
         else:
             return None
 
+    def _check_presence_before_insert(self, user_id, substitute_id, name_selected_prod):
+        """Before insert checks wether this line do not already exists"""
+        sql = 'SELECT * FROM Search WHERE user_id="{}" AND substitute_id={} AND product_name="{}";'\
+        .format(user_id, substitute_id, name_selected_prod)
+
+        self.my_cursor.execute(sql)
+        my_result = self.my_cursor.fetchone()
+        if my_result:
+            return False
+        elif my_result == None:
+            return True
+
+
     def _save_search(self, cat, name_selected_prod, sub, my_user):
         substitute_id = self.get_from_db("id", sub)
         user_id = my_user.id
         timestamp = datetime.today()
-        sql = 'INSERT INTO search (user_id, substitute_id, day_date, category, product_name)'\
-        'VALUES ({}, {}, "{}", "{}", "{}");'.format(user_id, substitute_id, timestamp, \
-            cat, name_selected_prod)
-        input(sql)
-        self.my_cursor.execute(sql)
-        self.mydb.commit()
+        can_insert = self._check_presence_before_insert(user_id, substitute_id, name_selected_prod)
+        if can_insert:
+            sql = 'INSERT INTO Search (user_id, substitute_id, day_date, category, product_name)'\
+            'VALUES ({}, {}, "{}", "{}", "{}");'.format(user_id, substitute_id, timestamp, \
+                cat, name_selected_prod)
+            self.my_cursor.execute(sql)
+            self.mydb.commit()
+            print("... recherche enregistrée ...")
+        else:
+            sql = "UPDATE Search SET day_date = '{}' WHERE substitute_id = {};".\
+            format(timestamp, substitute_id)
+            self.my_cursor.execute(sql)
+            self.mydb.commit()
+            print("... historique de recherche mise à jour ...")
 
     def describ_sub(self, sub):
         """Gives to the user the description of a product"""
@@ -274,13 +293,11 @@ class Database(Interactions):
 
         chain = ""
         if brands != None:
-            print("brands - ", type(brands))
+
             chain += "La marque de ce produit est {}.\n".format(brands)
         if components != None:
-            chain += "Voici sa composition :"
-            for key in components:
-                chain += "- {} : {},\n".format(key, components[key] )
-        return chain
+            chain += "Voici sa composition : {}.\n".format(components)
+            return chain
 
     def compare_prod_with_sub(self, cat, name_selected_prod, my_user):
         """ Searchs informations about prod and compare them with other prod in the table
@@ -304,7 +321,7 @@ class Database(Interactions):
         #2
 
         sub = self._display_answer(cat, name_selected_prod, criterion)
-        input("compare_prod_with_sub (sub): {} ".format(sub))
+
         #3
         print(self.describ_sub(sub))
 

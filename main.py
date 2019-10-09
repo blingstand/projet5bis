@@ -63,18 +63,21 @@ def main():
             while loop:
                 choice = db.Database()
                 selected_cat = choice.display_choice_cat()
-                selected_prod = choice.display_choice_prod(selected_cat)
-                choice.compare_prod_with_sub(selected_cat, selected_prod, my_user)
-                after_search = choice.after_search("3")
-                if after_search == "1":
-                    url = choice.display_more_info_about_product(selected_prod)
-                    webbrowser.open_new(url)
-                    after_web = choice.after_search("2")
-                    if after_web == "2":
+                if selected_cat :
+                    selected_prod = choice.display_choice_prod(selected_cat)
+                    choice.compare_prod_with_sub(selected_cat, selected_prod, my_user)
+                    after_search = choice.after_search("3")
+                    if after_search == "1":
+                        url = choice.display_more_info_about_product(selected_prod)
+                        webbrowser.open_new(url)
+                        after_web = choice.after_search("2")
+                        if after_web == "2":
+                            break
+                    elif after_search == "2":
+                        pass
+                    elif after_search == "3":
                         break
-                elif after_search == "2":
-                    pass
-                elif after_search == "3":
+                else:
                     break
 
 

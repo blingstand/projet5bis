@@ -23,8 +23,8 @@ class Fill_DB():
     TUP_IMP_COL = ("product_name", "additives_original_tags", "nutrition_grades","labels", \
         "packaging", "manufacturing_places", "ingredients_from_or_that_may_be_from_palm_oil_n",\
         "nova_group", "ingredients_text")
-    TUP_COLUMNS = 'category, name, labels, additives, nb_additives, packagings, nutrition_grade',\
-    'nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, ingredients_text, url',\
+    COLUMNS = 'category, name, labels, additives, nb_additives, packagings, nutrition_grade,'\
+    'nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, composition, url,'\
     'quantity, brands, nutriments'
 
     def __init__(self):
@@ -146,7 +146,7 @@ class Fill_DB():
         #list prod with no duplicate names
         list_with_no_duplicate_name = self._kick_duplicates(first_list_prod)
 
-        #list with no empty values for selected TUP_columns
+        #list with no empty values for selected columns
         list_without_empty = self._kick_empty_values(list_with_no_duplicate_name)
 
         #keep just the col writen in self.TUP_COL
@@ -177,12 +177,12 @@ class Fill_DB():
         """
         Inserts a line in the table product
         """
-        sql = 'INSERT INTO Product {} VALUES ("{}", "{}", "{}", "{}", "{}", "{}", '\
-        '"{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}","{}");'.format(self.TUP_COLUMNS,\
+        sql = 'INSERT INTO Product ({}) VALUES ("{}", "{}", "{}", "{}", "{}", "{}", '\
+        '"{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}","{}");'.format(self.COLUMNS,\
         category, name, labels, additives, nb_additives, packagings, nutrition_grade, nova_group, \
         traces, manufacturing_places_tags, minerals_tags, palm_oil, ingredient_text, url, quantity, \
         brands, nutriments)
-        print(sql)
+
         self.my_cursor.execute(sql)
         self.mydb.commit() #has to commit the change
 
@@ -215,15 +215,16 @@ def main():
             nutriments = product["nutriments"]
             ingredients = product["ingredients_text"]
 
+
             try :
-                if ajout == 0 :
-                    products.add_substitute(category, name, labels, additives, nb_additives, packagings,\
-                        nutrition_grade, nova_group, traces, manufacturing_places_tags, \
-                        minerals_tags, palm_oil, url, quantity, brands, nutriments, ingredients)
-                    ajout += 1
+
+                products.add_substitute(category, name, labels, additives, nb_additives, packagings,\
+                    nutrition_grade, nova_group, traces, manufacturing_places_tags, \
+                    minerals_tags, palm_oil, ingredients, url, quantity, brands, nutriments )
+                ajout += 1
             except Exception as e :
                 print(name, e)
-                sys.exit()
+                ajout-= 1
 
     print("lignes écrites = {}".format(ajout))
 
