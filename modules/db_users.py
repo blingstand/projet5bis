@@ -13,16 +13,16 @@ def negatif_feed_back(msg):
     time.sleep(1)
 
 class DbUser(db.Database):
-    """class that manage the connection to the database and the fonction related to db"""
+    """class that manage the _connection to the database and the fonction related to db"""
 
     COLUMNS = 'name, labels, additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags,\
     minerals_tags, palm_oil, composition, link, quantity, brands, nutriments'
 
 
-    def registration(self, user):
+    def _registration(self, user):
         """ checks whether the pseudo is available :
                 if yes creates account,
-                if not offers 3 possibilities (connection with these id, start again, exit)  ."""
+                if not offers 3 possibilities (_connection with these id, start again, exit)  ."""
         if user.pseudo == "":
             user.pseudo = input("\n  Pseudo : ")
             user.password = input("  Mot de passe : ")
@@ -64,8 +64,8 @@ class DbUser(db.Database):
                         "\n2/ Essayer de nouveau,\n3/ Abandonner.\n ->")
 
                     if answer == "1":
-                        #tries a connection with these id
-                        user = self.connection(user)
+                        #tries a _connection with these id
+                        user = self._connection(user)
                         return user
                     elif answer == "2":
                         #tries again
@@ -80,7 +80,7 @@ class DbUser(db.Database):
             user.pseudo = input("\n  Pseudo : ")
             user.password = input("  Mot de passe : ")
 
-    def connection(self, user):
+    def _connection(self, user):
         """ checks whether the pseudo is present in the user table.
             if yes creates checks whether the password
                 from user table is the same than user.password,
@@ -118,13 +118,13 @@ class DbUser(db.Database):
 
                 if answer == "1":
                     #tries to subscribe with these id
-                    user = self.registration(user)
+                    user = self._registration(user)
                     return user
                 elif answer == "2":
                     #tries again with new id
                     break
                 elif answer == "3":
-                    #exits the connection function
+                    #exits the _connection function
                     user.connected = "Exit"
                     return user
                 else:
@@ -136,7 +136,7 @@ class DbUser(db.Database):
     def authentication(self, user):
         """ connectes a user if user.connected is False
 
-            Therefore it calls inscription() or connection(),
+            Therefore it calls inscription() or _connection(),
             depending on the user answer to the input.
             Permits also to get user.id (for the next sql querries will be usefull)
         """
@@ -147,14 +147,14 @@ class DbUser(db.Database):
 
             #the question
             new = input("Il faut vous connecter : \n  1 - Inscription,\n "\
-                " 2 - Connexion,\n  3 - Quitter,\n ->")
+                " 2 - Connexion,\n  3 - Quitter.\n ->")
 
             #condition
             if new in ("1", ""):
                 os.system("cls")
                 print("\n", "-"*30, " PAGE D'AUTHENTIFICATION ", "-"*30, "\n")
                 print("- - - - Inscription - - - -")
-                user = self.registration(user)
+                user = self._registration(user)
                 #to manage the exit option and remain user.connected False
                 if user.connected == "Exit":
                     user.connected = False
@@ -164,7 +164,7 @@ class DbUser(db.Database):
                 os.system("cls")
                 print("\n", "-"*30, " PAGE D'AUTHENTIFICATION ", "-"*30, "\n")
                 print("- - - - Connexion - - - -")
-                user = self.connection(user)
+                user = self._connection(user)
                 if user.connected == "Exit":
                     user.connected = False
                     break
@@ -184,23 +184,32 @@ class DbUser(db.Database):
         print("\n", "-"*30, " PAGE DE L'HISTORIQUE DE RECHERCHE ", "-"*30, "\n")
         print("Voici les précédentes recherches que vous avez effectuées : \n")
 
-        sql = """SELECT Search.DATE_FORMAT(day_date, '%e/%m/%y - %k:%i:%s'),
-                        Product.name,
-                        Search.product_name, "\
-        "FROM Search
-        INNER JOIN Product ON Search.substitute_id = Product.id
-        WHERE Search.user_id = '{}' ORDER BY 'date' DESC;""".format(user.id)
-        self.my_cursor.execute(sql)
-        resultat = self.my_cursor.fetchall()
+        try:
+            sql = """SELECT DATE_FORMAT(Search.day_date, '%c-%b-%y %H:%i'),
+                            Product.name,
+                            Search.product_name, "\
+            "FROM Search
+            INNER JOIN Product ON Search.substitute_id = Product.id
+            WHERE Search.user_id = '{}' ORDER BY 'date' DESC;""".format(user.id)
 
-        print("- "*35)
-        print("  date \t\t |  Produit\t | Substitut")
-        print("- "*35)
-        for i in resultat:
-            print("  {} \t\t | {} \t | {} ".format(i[0], i[1], i[2]))
-        print("- "*35)
-
-        input("Appuyer sur entrer pour continuer.")
+            self.my_cursor.execute(sql)
+            resultat = self.my_cursor.fetchall()
+            if resultat == [] :
+                return "Aucun résultat trouvé dans votre historique de recherche."
+            chain =""
+            chain += "- "*35
+            chain += "\n"
+            chain += "  date \t\t |  Produit\t | Substitut"
+            chain += "\n"
+            chain += "- "*35
+            chain += "\n"
+            for i in resultat:
+                chain +=  " {} | {} - {}\n".format(i[0], i[1], i[2])
+            chain += "- "*35
+            chain += "\n"
+            return chain
+        except Exception as e:
+            raise e
 
     def get_more_info(self, user):
         """User chooses a prod or a sub and give 1 word (or more), functions makes a search"""

@@ -5,7 +5,7 @@
     First the user selects a category. Then a product belonging to this category.
     Finally the system finds out an organic substitute of this product.
 """
-import os, sys, webbrowser
+import os, sys, webbrowser, time
 from datetime import datetime
 from modules.interactions import Interactions
 from config import Config
@@ -199,7 +199,7 @@ class Database(Interactions):
             substitute = self._get_resp_sub(cat, name_selected_prod, "labels", \
                 self.TUP_BIO_LABELS)
         elif precision == "4":
-            print("Retour au menu principal")
+            return None, "menu"
         else:
             self.negatif_feed_back("Un nombre entre 1 et 4 est attendu")
 
@@ -228,6 +228,8 @@ class Database(Interactions):
 
         elif criterion == "2":
             substitute, precision = self._get_type_resp_sub(cat,name_selected_prod)
+            if precision == "menu":
+                return "menu"
             precision = int(precision) - 1 #index starts at 0
             self.display_title("Affichage de la réponse")
 
@@ -255,7 +257,6 @@ class Database(Interactions):
             return None
 
     def _check_presence_before_insert(self, user_id, substitute_id, name_selected_prod):
-        """Before insert checks wether this line do not already exists"""
         sql = 'SELECT * FROM Search WHERE user_id="{}" AND substitute_id={} AND product_name="{}";'\
         .format(user_id, substitute_id, name_selected_prod)
 
@@ -265,7 +266,6 @@ class Database(Interactions):
             return False
         elif my_result == None:
             return True
-
 
     def _save_search(self, cat, name_selected_prod, sub, my_user):
         substitute_id = self.get_from_db("id", sub)
@@ -313,14 +313,22 @@ class Database(Interactions):
         title = "Recherche d'un substitut à ce produit {} ({})".format(name_selected_prod, cat)
         self.display_title(title)
 
-        while criterion not in ["1", "2"]:
+        while criterion not in ["1", "2", "3"]:
             criterion = input("Je vais essayer de vous trouver un substitut à ce produit qui sera soit :\n"\
-            "1) Meilleur pour votre santé,\n2) Respectueux de l'environnement.\n Que voulez-vous ?\n> ")
-            if criterion not in ["1", "2"]:
+            "1/ Meilleur pour votre santé,\n2/ Respectueux de l'environnement.\n3/ Revenir au menu\n> ")
+            if criterion not in ["1", "2","3"]:
                 self.negatif_feed_back("Réponse attendue 1 ou 2.")
         #2
+        if criterion == "3":
+            print("Retour au menu principal ! ")
+            time.sleep(1)
+            return "menu"
 
         sub = self._display_answer(cat, name_selected_prod, criterion)
+        if sub == "menu":
+            print("Retour au menu principal ! ")
+            time.sleep(1)
+            return "menu"
 
         #3
         print(self.describ_sub(sub))

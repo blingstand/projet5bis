@@ -28,7 +28,9 @@ class Interactions():
         for i in my_liste:
             print("\t{} -> {}".format(count, i))
             count +=1
-        print("21 : Revenir au menu principal")
+        print("** ** "*9)
+        print(" ----- \t 21 : Revenir au menu principal")
+        print("** ** "*9)
         ind = input(">")
 
         return ind
@@ -48,15 +50,16 @@ class Interactions():
         try:
 
             if ind == "21":
-                input("Retour au menu principal ! ")
-                sys.exit()
+                print("Retour au menu principal ! ")
+                time.sleep(1)
+                return 'menu'
             elif int(ind) < 21:
                 return my_list[int(ind)-1]
             else:
                 self.negatif_feed_back(error_msg)
                 return None
         except Exception as e:
-            self.negatif_feed_back("except")
+            self.negatif_feed_back(error_msg)
             return None
 
     def conclusion_choice(self, cat, prod):
