@@ -1,5 +1,4 @@
-#pb : recherche/idtf_refusé -> peut quand même rechercher
-#pb : histo/idtf_refusé -> peut quand même rechercher
+#pb : fill_db > bloquer insertion s'il y a déjà 400 lignes
 """Welome to the fifth project
 
     In this projet, I permit to my user to change their mind on food.
