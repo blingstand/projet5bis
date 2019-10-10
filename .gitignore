@@ -1,5 +1,4 @@
 env/
 __pycache__/
-lib.txt
 flask/
 config.py
