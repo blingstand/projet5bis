@@ -186,9 +186,10 @@ class DbUser(db.Database):
 
         try:
             sql = """SELECT DATE_FORMAT(Search.day_date, '%c-%b-%y %H:%i'),
-                            Product.name,
-                            Search.product_name, "\
-            "FROM Search
+                            Search.category,
+                            Search.product_name,
+                            Search.criterion,
+                            Product.name FROM Search
             INNER JOIN Product ON Search.substitute_id = Product.id
             WHERE Search.user_id = '{}' ORDER BY 'date' DESC;""".format(user.id)
 
@@ -196,17 +197,15 @@ class DbUser(db.Database):
             resultat = self.my_cursor.fetchall()
             if resultat == [] :
                 return "Aucun résultat trouvé dans votre historique de recherche."
-            chain =""
-            chain += "- "*35
+            chain = "- "*35
             chain += "\n"
-            chain += "  date \t\t |  Produit\t | Substitut"
-            chain += "\n"
-            chain += "- "*35
-            chain += "\n"
+            chain += "  Date | Categorie | Produit | Critère | Substitut\n"
             for i in resultat:
-                chain +=  " {} | {} - {}\n".format(i[0], i[1], i[2])
-            chain += "- "*35
-            chain += "\n"
+                chain +=  " {} | {} | {} | {} | {} ".format(i[0], i[1], i[2], i[3], i[4])
+                chain += "\n"
+                chain += "* "*35
+                chain += "\n"
+
             return chain
         except Exception as e:
             raise e

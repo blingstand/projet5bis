@@ -28,6 +28,7 @@ CREATE TABLE Search (
     day_date DATETIME,
     category CHAR(100) NOT NULL,
     product_name CHAR(100) NOT NULL,
+    criterion INT,
     PRIMARY KEY (user_id, substitute_id),
     CONSTRAINT fk_sub_id FOREIGN KEY (substitute_id) REFERENCES Product(id)
 )ENGINE = INNODB;

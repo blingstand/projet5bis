@@ -233,21 +233,25 @@ class Database(Interactions):
             substitute, precision = self._get_type_resp_sub(cat,name_selected_prod)
             if precision == "menu":
                 return "menu"
-            precision = int(precision) - 1 #index starts at 0
+            index = int(precision) - 1 #index starts at 0
+            criterion = criterion + precision
             self.display_title("Affichage de la réponse")
 
             if substitute:
                 if substitute == name_selected_prod :
-                    print("Vous avez demandé un '{}', je vous conseille de garder {}."\
-                        .format(self.TUP_PRECISION[precision], substitute))
+                    print("Vous avez demandé un '{}',je vous conseille de garder {}."\
+                        .format(self.TUP_PRECISION[index], substitute))
                 else:
                     print("Vous avez demandé un '{}', je vous conseille plutôt {}."\
-                        .format(self.TUP_PRECISION[precision], substitute))
+                        .format(self.TUP_PRECISION[index], substitute))
             else:
                 substitute = name_selected_prod
                 print("Aucun substitut trouvé pour cette catégorie ({}).\n"\
                     "Vous pouvez garder {} dans l'attente de nouveaux produits dans la base\n".format(cat, substitute))
-        return substitute
+        if criterion in ["0", "1", "21", "22", "23"]:
+            return substitute, criterion
+        else:
+            input("il y a un pb =(")
 
     def get_from_db(self, wanted, name):
 
@@ -260,10 +264,10 @@ class Database(Interactions):
         else:
             return None
 
-    def _check_presence_before_insert(self, user_id, substitute_id, name_selected_prod):
-        sql = 'SELECT * FROM Search WHERE user_id="{}" AND substitute_id={} AND product_name="{}";'\
-        .format(user_id, substitute_id, name_selected_prod)
-
+    def _check_presence_before_insert(self, user_id, substitute_id, name_selected_prod, criterion):
+        sql = 'SELECT * FROM Search WHERE user_id="{}" AND substitute_id={}'\
+        ' AND product_name="{}" AND criterion = {};'\
+        .format(user_id, substitute_id, name_selected_prod, criterion)
         self.my_cursor.execute(sql)
         my_result = self.my_cursor.fetchone()
         if my_result:
@@ -271,15 +275,19 @@ class Database(Interactions):
         elif my_result == None:
             return True
 
-    def _save_search(self, cat, name_selected_prod, sub, my_user):
+    def _save_search(self, cat, name_selected_prod, sub, my_user, criterion):
         substitute_id = self.get_from_db("id", sub)
         user_id = my_user.id
         timestamp = datetime.today()
-        can_insert = self._check_presence_before_insert(user_id, substitute_id, name_selected_prod)
+        can_insert = self._check_presence_before_insert(user_id, \
+            substitute_id, name_selected_prod, criterion)
         if can_insert:
-            sql = 'INSERT INTO Search (user_id, substitute_id, day_date, category, product_name)'\
-            'VALUES ({}, {}, "{}", "{}", "{}");'.format(user_id, substitute_id, timestamp, \
-                cat, name_selected_prod)
+            sql = 'INSERT INTO Search (user_id, substitute_id, day_date, category, '\
+            'product_name, criterion) VALUES ({}, {}, "{}", "{}", "{}", {});'\
+            .format(user_id, substitute_id, timestamp, \
+                cat, name_selected_prod, criterion)
+            print("_save_search : \n")
+            input(sql)
             self.my_cursor.execute(sql)
             self.mydb.commit()
             print("... recherche enregistrée ...")
@@ -328,7 +336,7 @@ class Database(Interactions):
             time.sleep(1)
             return "menu"
 
-        sub = self._display_answer(cat, name_selected_prod, criterion)
+        sub, criterion = self._display_answer(cat, name_selected_prod, criterion)
         if sub == "menu":
             print("Retour au menu principal ! ")
             time.sleep(1)
@@ -339,7 +347,7 @@ class Database(Interactions):
 
         #
         if my_user.connected:
-            self._save_search(cat, name_selected_prod, sub, my_user)
+            self._save_search(cat, name_selected_prod, sub, my_user, criterion)
 
 
     # *******************************************DISPLAY SHEET PROD
