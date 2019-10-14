@@ -29,16 +29,18 @@ CREATE TABLE Search (
     category CHAR(100) NOT NULL,
     product_name CHAR(100) NOT NULL,
     PRIMARY KEY (user_id, substitute_id),
-    FOREIGN KEY (substitute_id) REFERENCES Product(id)
+    CONSTRAINT fk_sub_id FOREIGN KEY (substitute_id) REFERENCES Product(id)
 )ENGINE = INNODB;
 
+
+ALTER TABLE Search DROP FOREIGN KEY fk_sub_id;
 
 DROP TABLE IF EXISTS Product;
 CREATE TABLE Product (
     id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     category VARCHAR(60) NOT NULL,
     name VARCHAR(150) NOT NULL,
-    labels VARCHAR(350),
+    labels VARCHAR(450),
     additives VARCHAR(150),
     nb_additives TINYINT,
     packagings VARCHAR(300) ,
@@ -48,12 +50,16 @@ CREATE TABLE Product (
     manufacturing_places_tags VARCHAR(500),
     minerals_tags VARCHAR(50),
     palm_oil VARCHAR(5),
-    composition VARCHAR(1800),
     url VARCHAR(200),
     quantity VARCHAR(10),
     brands VARCHAR(80),
     nutriments VARCHAR(3500),
+    composition VARCHAR(1800),
     PRIMARY KEY (id)
 )ENGINE = INNODB;
+
+ALTER TABLE Search
+ADD CONSTRAINT fk_sub_id FOREIGN KEY (substitute_id) REFERENCES Product(id);
+
 
 

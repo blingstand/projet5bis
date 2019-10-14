@@ -254,6 +254,9 @@ class Database(Interactions):
         sql = 'SELECT {} from product where name = "{}";'.format(wanted, name)
         self.my_cursor.execute(sql)
         my_result = self.my_cursor.fetchone()
+        if wanted == "composition":
+            print(sql)
+            input(my_result)
         if my_result:
             return my_result[0]
         else:
@@ -291,9 +294,7 @@ class Database(Interactions):
 
     def describ_sub(self, sub):
         """Gives to the user the description of a product"""
-        components = self.get_from_db("composition", sub)
-        brands = self.get_from_db("brands", sub)
-
+        components, brands = self.get_from_db("composition", sub), self.get_from_db("brands", sub)
         chain = ""
         if brands != None:
 

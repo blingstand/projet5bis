@@ -3,7 +3,8 @@
     Maintenant ma base est remplie par 380 lignes
 
 """
-
+import sys
+from datetime import datetime
 import openfoodfacts
 import mysql.connector
 import modules.database
@@ -20,16 +21,16 @@ class Fill_DB():
     TUP_COL = ("product_name", "labels", "additives_original_tags", "packaging",\
         "nutrition_grades","nova_group", "traces","manufacturing_places","minerals_tags",\
         "ingredients_from_or_that_may_be_from_palm_oil_n","url", "product_quantity", \
-        "brands_tags", "nutriments")
+        "brands_tags", "nutriments", "ingredients_text")
     TUP_IMP_COL = ("product_name", "additives_original_tags", "nutrition_grades","labels", \
         "packaging", "manufacturing_places", "ingredients_from_or_that_may_be_from_palm_oil_n",\
-        "nova_group")
+        "nova_group", "ingredients_text")
     COLUMNS = 'category, name, labels, additives, nb_additives, packagings, nutrition_grade, '\
     'nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url,'\
-    ' quantity, brands, nutriments'
+    ' quantity, brands, nutriments, composition'
 
     def __init__(self):
-        self.dict_prod = self.create_dict_prod(self.TUP_CATEGORIES)
+
         config = Config()
         self.mydb = mysql.connector.connect(
             host=config.host,
@@ -38,6 +39,19 @@ class Fill_DB():
             database=config.database
         )
         self.my_cursor = self.mydb.cursor()
+
+    def check_before_fill(self):
+
+        sql = "SELECT COUNT(name) FROM product;"
+        self.my_cursor.execute(sql)
+        nb_lines = self.my_cursor.fetchone()
+        print("Il y a {} lignes écrite(s) dans la base.".format(nb_lines[0]))
+        if nb_lines[0] == 0:
+            return True
+        else:
+            return False
+
+
 
     def _selected_crit_for_prod(self, product, category):
         """Takes a product and keep if it follows 2 rules
@@ -132,7 +146,7 @@ class Fill_DB():
             for key in prod:
                 if key in self.TUP_COL:
                     new_prod[key] = prod[key]
-            if len(new_prod) == 14:
+            if len(new_prod) == len(self.TUP_COL):
                 # print("J'ajoute {} à ma new_liste".format(new_prod["product_name"]))
                 new_list.append(new_prod)
 
@@ -157,13 +171,13 @@ class Fill_DB():
 
         return list_20_prod
 
-    def create_dict_prod(self, list_selected):
+    def create_dict_prod(self):
         """Creates the dict_prod with previous functions  """
 
         dict_prod = {} #create dico
 
-        print("Interroge l'API ! ")
-        for cat in list_selected: #["Poissons"], list_selected
+        print(" -- Interroge l'API ! -- ")
+        for cat in self.TUP_CATEGORIES: #["Poissons"], list_selected
             list_prod = self._get_list_for_cat(cat)
             #for each cat I fill the dictionnary dict_prod with a list
 
@@ -171,23 +185,32 @@ class Fill_DB():
 
         return dict_prod
 
-    def add_substitute(self, category, name, labels, additives,nb_additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, brands, nutriments):
+    def add_substitute(self, category, name, labels, additives,nb_additives, \
+        packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags,\
+         minerals_tags, palm_oil, url, quantity, brands, nutriments, composition):
         """
         Inserts a line in the table product
         """
         sql = 'INSERT INTO Product ({}) VALUES ("{}", "{}", "{}", "{}", "{}", "{}", '\
-        '"{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}");'.format(self.COLUMNS,\
+        '"{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}");'.format(self.COLUMNS,\
         category, name, labels, additives, nb_additives, packagings, nutrition_grade, nova_group, \
         traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, \
-        brands, nutriments)
-        self.my_cursor.execute(sql)
-        self.mydb.commit() #has to commit the change
-def main():
-    products = Fill_DB()
-    dict_prod = products.dict_prod
-    ajout = 0
-    for key in dict_prod:
+        brands, nutriments, composition)
 
+        self.my_cursor.execute(sql)
+        # self.mydb.commit() #has to commit the change
+def main():
+    before = datetime.now()
+    products = Fill_DB()
+    can_fill = products.check_before_fill()
+
+    if can_fill == False:
+        print("Erreur > La base est déjà remplie.")
+        sys.exit(0)
+    dict_prod = products.create_dict_prod()
+    print("Récupération des données terminée")
+    progression, ajout = 0, 0
+    for key in dict_prod :
         for product in dict_prod[key]:
             category = key
             name = product["product_name"]
@@ -205,29 +228,37 @@ def main():
             url = product["url"].replace("https://world.", "https://fr.", 1)
             quantity = product["product_quantity"]
             brands = product["brands_tags"]
-            nutriments = product["nutriments"]
+            nutriments = product["nutriments"] #full of infos
+            composition = product["ingredients_text"]
 
             try :
-                products.add_substitute(category, name, labels, additives, nb_additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, brands, nutriments)
+                if progression == 0:
+                    print("Début de l'écriture dans la base")
+                    print(" -{}% de l'écriture effectué".format(progression))
+                products.add_substitute(category, name, labels, additives, nb_additives, packagings,\
+                    nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, \
+                    palm_oil, url, quantity, brands, nutriments, composition)
                 ajout += 1
+                progression = progression + ((1/400)*100)
+                if progression in [20, 40, 60, 80, 100]:
+                    print(" -{}% de l'écriture effectués".format(progression))
             except Exception as e :
-                print(name, e)
+                print("/!\ Il y a un problème pour cette entrée : {}.\n{}".format(name, e))
+                sys.exit(0)
 
-    print("lignes écrites = {}".format(ajout))
+    print("lignes prêtes à être commit : {}/400".format(ajout))
+    if ajout == 400:
+        products.mydb.commit()
+        print("lignes ajoutées à la bases : {}/400".format(ajout))
+        after = datetime.now()
+        duration = after - before
+        print(" -- Temps écoulé pour remplir la base : {} seconds --".format(duration.seconds))
+    else:
+        raise "Le nombre de lignes ne correspond pas aux attentes du programme."
+
+
 
 if __name__ == '__main__':
     main()
 
- # def fill_table(self, category, name, labels, additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, brands, nutriments):
-    #     """Fills the table of a given db from DbConnector
-    #         -1 connection
-    #         -2 request
-    #     """
-    #     try:
-    #         self.add_substitute(category, name, labels, additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, brands, nutriments)
-    #     except Exception as e:
-    #         raise e
-
-    # def get_products(self, categories):
-    #     pass
 
