@@ -29,18 +29,21 @@ class Interactions():
             print("\t{} -> {}".format(count, i))
             count +=1
         print("** ** "*9)
-        print(" ----- \t 21 : Revenir au menu principal")
+        print("     ----- 21 : Revenir au menu principal -----")
         print("** ** "*9)
         ind = input(">")
 
         return ind
 
-    def display_choice_cat(self):
+    def display_choice_cat(self, my_user):
         """ permits user to make a choice among 20 categories"""
         answer = None
         while answer == None:
         #loop in order to repeat the input question until an acceptable answer
             self.display_title("Choisir une catégorie")
+            if not my_user.connected:
+                    print("/!\ ATTENTION : vous n'êtes pas connecté, aucune sauvegarde de recherche "\
+                        "n'aura lieue !\n")
             ind = self.input_cat_prod("catégorie", self.TUP_CATEGORY) #input for cat
             answer = self._check_answer(ind, self.TUP_CATEGORY,"Un nombre entre 1 et 21 est attendu ! ")
         return answer

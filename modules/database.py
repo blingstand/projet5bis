@@ -43,7 +43,7 @@ class Database(Interactions):
                     list_prod.append(string)
         return list_prod
 
-    def display_choice_prod(self, cat):
+    def display_choice_prod(self, my_user, cat):
         """ permits user to make a choice among 20 categories"""
 
         list_prod = self._get_prod_from_cat(cat)
@@ -51,6 +51,9 @@ class Database(Interactions):
         while answer == None:
         #loop in order to repeat the input question until an acceptable answer
             self.display_title("Choisir un produit")
+            if not my_user.connected:
+                    print("/!\ ATTENTION : vous n'êtes pas connecté, aucune sauvegarde de recherche "\
+                        "n'aura lieue !\n")
             ind = self.input_cat_prod("produit", list_prod) #input for cat
             answer = self._check_answer(ind, list_prod,"Un nombre entre 1 et 21 est attendu ! ")
 
@@ -297,7 +300,8 @@ class Database(Interactions):
             chain += "La marque de ce produit est {}.\n".format(brands)
         if components != None:
             chain += "Voici sa composition : {}.\n".format(components)
-            return chain
+        if chain != "":
+            print(chain)
 
     def compare_prod_with_sub(self, cat, name_selected_prod, my_user):
         """ Searchs informations about prod and compare them with other prod in the table
@@ -330,10 +334,12 @@ class Database(Interactions):
             return "menu"
 
         #3
-        print(self.describ_sub(sub))
+        self.describ_sub(sub)
 
         #
-        self._save_search(cat, name_selected_prod, sub, my_user)
+        if my_user.connected:
+            self._save_search(cat, name_selected_prod, sub, my_user)
+
 
     # *******************************************DISPLAY SHEET PROD
     def display_more_info_about_product(self, name_selected_prod):

@@ -57,20 +57,20 @@ def main():
 
 ##################################################################################### 2
         elif answer == "2":
-            if not my_user.connected:
-                my_db = dbu.DbUser()
-                my_user = my_db.authentication(my_user)
-            if not my_user.connected:
-                print("Retour au menu principal ! ")
-                time.sleep(1)
-                continue
+            # if not my_user.connected:
+            #     my_db = dbu.DbUser()
+            #     my_user = my_db.authentication(my_user)
+            # if not my_user.connected:
+            #     print("Retour au menu principal ! ")
+            #     time.sleep(1)
+            #     continue
             loop = True
             while loop:
                 choice = db.Database()
-                selected_cat = choice.display_choice_cat()
+                selected_cat = choice.display_choice_cat(my_user)
                 if selected_cat == "menu":
                     break
-                selected_prod = choice.display_choice_prod(selected_cat)
+                selected_prod = choice.display_choice_prod(my_user, selected_cat)
                 if selected_prod == "menu":
                     break
                 stop = choice.compare_prod_with_sub(selected_cat, selected_prod, my_user)
