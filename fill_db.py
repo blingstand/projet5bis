@@ -6,7 +6,8 @@
 
 import openfoodfacts
 import mysql.connector
-import sys
+import modules.database
+from config import Config
 
 class Fill_DB():
 
@@ -18,22 +19,23 @@ class Fill_DB():
     "Glaces", "Chocolat noir", "Soupes", "Compotes" )
     TUP_COL = ("product_name", "labels", "additives_original_tags", "packaging",\
         "nutrition_grades","nova_group", "traces","manufacturing_places","minerals_tags",\
-        "ingredients_from_or_that_may_be_from_palm_oil_n","ingredients_text", "url", "product_quantity", \
+        "ingredients_from_or_that_may_be_from_palm_oil_n","url", "product_quantity", \
         "brands_tags", "nutriments")
     TUP_IMP_COL = ("product_name", "additives_original_tags", "nutrition_grades","labels", \
         "packaging", "manufacturing_places", "ingredients_from_or_that_may_be_from_palm_oil_n",\
-        "nova_group", "ingredients_text")
-    COLUMNS = 'category, name, labels, additives, nb_additives, packagings, nutrition_grade,'\
-    'nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, composition, url,'\
-    'quantity, brands, nutriments'
+        "nova_group")
+    COLUMNS = 'category, name, labels, additives, nb_additives, packagings, nutrition_grade, '\
+    'nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url,'\
+    ' quantity, brands, nutriments'
 
     def __init__(self):
         self.dict_prod = self.create_dict_prod(self.TUP_CATEGORIES)
+        config = Config()
         self.mydb = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            passwd="123",
-            database="python"
+            host=config.host,
+            user=config.user,
+            passwd=config.passwd,
+            database=config.database
         )
         self.my_cursor = self.mydb.cursor()
 
@@ -100,7 +102,7 @@ class Fill_DB():
                     accepted_prod.remove(prod)
                     kick += 1
                     break
-            if prod["product_name"] == "Chocapic Maxi Format": #to fix a bug
+            if prod["product_name"] == "Chocapic Maxi Format": #to fix bug
                 accepted_prod.remove(prod)
                 kick += 1
 
@@ -128,11 +130,9 @@ class Fill_DB():
             new_prod = {}
             # print(new_prod, prod["product_name"])
             for key in prod:
-
                 if key in self.TUP_COL:
                     new_prod[key] = prod[key]
-
-            if len(new_prod) == len(self.TUP_COL):
+            if len(new_prod) == 14:
                 # print("J'ajoute {} à ma new_liste".format(new_prod["product_name"]))
                 new_list.append(new_prod)
 
@@ -171,31 +171,24 @@ class Fill_DB():
 
         return dict_prod
 
-    def add_substitute(self, category, name, labels, additives,nb_additives, packagings,\
-        nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags,\
-         palm_oil, ingredient_text, url, quantity, brands, nutriments):
+    def add_substitute(self, category, name, labels, additives,nb_additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, brands, nutriments):
         """
         Inserts a line in the table product
         """
         sql = 'INSERT INTO Product ({}) VALUES ("{}", "{}", "{}", "{}", "{}", "{}", '\
-        '"{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}","{}");'.format(self.COLUMNS,\
+        '"{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{}");'.format(self.COLUMNS,\
         category, name, labels, additives, nb_additives, packagings, nutrition_grade, nova_group, \
-        traces, manufacturing_places_tags, minerals_tags, palm_oil, ingredient_text, url, quantity, \
+        traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, \
         brands, nutriments)
-
         self.my_cursor.execute(sql)
         self.mydb.commit() #has to commit the change
-
-
 def main():
     products = Fill_DB()
     dict_prod = products.dict_prod
     ajout = 0
-
     for key in dict_prod:
 
         for product in dict_prod[key]:
-
             category = key
             name = product["product_name"]
             labels = product["labels"]
@@ -213,20 +206,28 @@ def main():
             quantity = product["product_quantity"]
             brands = product["brands_tags"]
             nutriments = product["nutriments"]
-            ingredients = product["ingredients_text"]
-
 
             try :
-
-                products.add_substitute(category, name, labels, additives, nb_additives, packagings,\
-                    nutrition_grade, nova_group, traces, manufacturing_places_tags, \
-                    minerals_tags, palm_oil, ingredients, url, quantity, brands, nutriments )
+                products.add_substitute(category, name, labels, additives, nb_additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, brands, nutriments)
                 ajout += 1
             except Exception as e :
                 print(name, e)
-                ajout-= 1
 
     print("lignes écrites = {}".format(ajout))
 
 if __name__ == '__main__':
     main()
+
+ # def fill_table(self, category, name, labels, additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, brands, nutriments):
+    #     """Fills the table of a given db from DbConnector
+    #         -1 connection
+    #         -2 request
+    #     """
+    #     try:
+    #         self.add_substitute(category, name, labels, additives, packagings,nutrition_grade, nova_group, traces, manufacturing_places_tags, minerals_tags, palm_oil, url, quantity, brands, nutriments)
+    #     except Exception as e:
+    #         raise e
+
+    # def get_products(self, categories):
+    #     pass
+

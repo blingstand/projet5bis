@@ -303,14 +303,13 @@ class Database(Interactions):
         """ Searchs informations about prod and compare them with other prod in the table
 
         1/  Lets user to choose a criterion : health / environnement
-        2/  Selects a substitute according to the choice if it is possible
+        2/  Returns a substitute according to the criterion if it is possible
         3/  Display a description of the product
         4/  Write the informations concerning the search in the db
 
         """
         #1
-        criterion = ""
-        title = "Recherche d'un substitut à ce produit {} ({})".format(name_selected_prod, cat)
+        criterion, title = "", "Recherche d'un substitut à ce produit {} ({})".format(name_selected_prod, cat)
         self.display_title(title)
 
         while criterion not in ["1", "2", "3"]:
