@@ -254,9 +254,7 @@ class Database(Interactions):
         sql = 'SELECT {} from product where name = "{}";'.format(wanted, name)
         self.my_cursor.execute(sql)
         my_result = self.my_cursor.fetchone()
-        if wanted == "composition":
-            print(sql)
-            input(my_result)
+
         if my_result:
             return my_result[0]
         else:
@@ -298,9 +296,11 @@ class Database(Interactions):
         chain = ""
         if brands != None:
 
-            chain += "La marque de ce produit est {}.\n".format(brands)
+            chain += " > La marque de ce produit est {}.\n".format(brands)
         if components != None:
-            chain += "Voici sa composition : {}.\n".format(components)
+            chain += "-------------- --------------"
+            chain += "\n > Voici sa composition : {}.\n".format(components)
+            chain += "-------------- --------------"
         if chain != "":
             print(chain)
 
